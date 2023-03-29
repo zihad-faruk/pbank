@@ -26,7 +26,6 @@ trait ProcessCommission
                 foreach ($datas as $data) {
                     $this->processEachRow($data);
                 }
-                print_r($this->discount_record_array);
             } else {
                 echo "Not Supported file type";
             }
@@ -83,10 +82,6 @@ trait ProcessCommission
                                 'commission.currency_conversion_array'
                             )[$currency]);
                 }
-                $amount = $amount * config(
-                        'commission.currency_conversion_array'
-                    )[$currency];
-
                 $helper = new PrivateWithdrawCalculationHelper();
                 $result = $helper->calculate($amount);
             }
