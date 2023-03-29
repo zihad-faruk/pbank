@@ -87,6 +87,18 @@ trait ProcessCommission
             }
         } else {
         }
-        echo $currency . "_" . number_format($result, 2) . "\n";
+        echo $result . '_' . $this->customRound($result) . "\n";
+    }
+
+    public function customRound(float $number): float
+    {
+        [$num, $decimals] = explode('.', $number);
+        [$first, $second] = str_split($decimals);
+        if (isset($second) && !empty($second)) {
+            if ($first != 0) {
+                $first++;
+            }
+        }
+        return (float)($num . '.' . $first.$second);
     }
 }
