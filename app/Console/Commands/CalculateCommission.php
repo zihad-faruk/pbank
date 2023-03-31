@@ -44,7 +44,7 @@ class CalculateCommission extends Command
     {
         $file   = $this->argument('file');
         $public = $this->option('public');
-        try {
+        /*try {
             if ($public) {
                 $file_url = public_path($file);
             } else {
@@ -53,7 +53,13 @@ class CalculateCommission extends Command
             $this->processCommission($file_url);
         } catch (\Exception $e) {
             echo "File not found";
+        }*/
+        if ($public) {
+            $file_url = public_path($file);
+        } else {
+            $file_url = $file;
         }
+        $this->processCommission($file_url);
         return 0;
     }
 }

@@ -63,6 +63,8 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
+## Prerequisites
+The system is based on ```LARAVEL 8.0``` . So ```php 7.4 or higher``` is required
 
 ## How to use the tool
 The basic command to use the script is :
