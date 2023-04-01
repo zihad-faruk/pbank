@@ -52,7 +52,7 @@ class CalculateCommission extends Command
             }
             $this->processCommission($file_url);
         } catch (\Exception $e) {
-            echo "File not found";
+            echo "Error Occurred";
         }*/
         if ($public) {
             $file_url = public_path($file);

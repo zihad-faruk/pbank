@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework;
 use Tests\TestCase;
+use PHPUnit\Framework\DataProviderTestSuite;
 
 class ExampleTest extends TestCase
 {
@@ -12,10 +14,22 @@ class ExampleTest extends TestCase
      *
      * @return void
      */
-    public function test_example()
+    public static function additionProvider(): array
     {
-        $response = $this->get('/');
+        return [
+            'adding zeros'  => [0, 0, 0],
+            'zero plus one' => [0, 1, 1],
+            'one plus zero' => [1, 0, 1],
+            'one plus one'  => [1, 1, 3],
+        ];
+    }
 
-        $response->assertStatus(200);
+    /**
+     * @test
+     * @dataProvider additionProvider
+     */
+    public function testAdd(int $a, int $b, int $expected): void
+    {
+        $this->assertSame($expected, $a + $b);
     }
 }

@@ -6,15 +6,49 @@ use App\Helpers\CsvHelper;
 use App\Helpers\DepositCalculationHelper;
 use App\Helpers\WithdrawCalculationHelper;
 use App\Helpers\PrivateWithdrawCalculationHelper;
+use Dotenv\Loader\Loader;
+use Illuminate\Support\Facades\Log;
 
 
 trait ProcessCommission
 {
     protected $withdraw_record_array = [];
     protected $discount_record_array = [];
+    protected $base_currency = 'EUR';
+    protected $currency_conversion_rates = [];
 
-    public function processCommission(string $file_path)
+    public function setupConversionRates()
     {
+        $conversion_rate_array = $this->fetchConversionRates();
+        $this->currency_conversion_rates = $conversion_rate_array;
+    }
+
+    public function fetchConversionRates()
+    {
+        $api_url = config('commission.currency_exchange_rates_api');
+        $response = file_get_contents($api_url);
+        Log::info("CURRENCY EXCHANGE API RESPONSE:" . $response);
+        if ( ! empty($response)) {
+            $response = json_decode($response, true);
+            return $response['rates'] ?? [];
+        }
+        return [];
+    }
+
+    public function setupTestConversionRates()
+    {
+        $conversion_rate_array = [
+            'EUR' => 1,
+            'USD' => 1.1497,
+            'JPY' => 129.53,
+        ];
+        $this->currency_conversion_rates = $conversion_rate_array;
+    }
+
+    public
+    function processCommission(
+        string $file_path
+    ) {
         if ( ! file_exists($file_path)) {
             echo "File does not exist";
         } else {
@@ -24,7 +58,7 @@ trait ProcessCommission
                 $csv_helper = new CsvHelper();
                 $datas = $csv_helper->fileDataToArray($file_path);
                 foreach ($datas as $data) {
-                    $this->processEachRow($data);
+                    echo $this->processEachRow($data) . "\n";
                 }
             } else {
                 echo "Not Supported file type";
@@ -42,6 +76,11 @@ trait ProcessCommission
         $amount = $row[4] ?? 0;
         $currency = $row[5] ?? 0;
         $result = 0.00;
+        $currency_info = config('commission.currency')[$currency] ?? [];
+        if (empty($currency_info)) {
+            return "Invalid currency";
+        }
+        $fraction_mode = $currency_info['fraction_mode'] ?? '';
 
         if ($operation_type == 'deposit') {
             $deposit_helper = new DepositCalculationHelper();
@@ -57,18 +96,22 @@ trait ProcessCommission
                 $helper = new WithdrawCalculationHelper();
                 $result = $helper->calculate($amount);
             } elseif ($user_type == 'private') {
+                //initialize conversion rate
+                if (empty($this->currency_conversion_rates)) {
+                    $this->setupConversionRates();
+                }
+                if ( ! isset($this->currency_conversion_rates[$currency])) {
+                    return "Conversion Rate is not available";
+                }
+                $conversion_rate = $this->currency_conversion_rates[$currency];
                 $discount_amount = config(
                     'commission.discount_amount_for_withdraw'
                 );
                 if (isset($this->discount_record_array[$code_for_user_interaction])) {
                     $discount_amount = $this->discount_record_array[$code_for_user_interaction];
                 }
-
-
                 if ($this->withdraw_record_array[$code_for_user_interaction] <= 3) {
-                    $converted_discount = ($discount_amount * config(
-                            'commission.currency_conversion_array'
-                        )[$currency]);
+                    $converted_discount = ($discount_amount * $conversion_rate);
                     $temp_amount = $amount;
                     $amount = $amount - $converted_discount;
                     if ($amount >= 0) {
@@ -78,19 +121,16 @@ trait ProcessCommission
                     }
 
                     $this->discount_record_array[$code_for_user_interaction] =
-                        ($remaining_discount / config(
-                                'commission.currency_conversion_array'
-                            )[$currency]);
+                        ($remaining_discount / $conversion_rate);
                 }
                 $helper = new PrivateWithdrawCalculationHelper();
                 $result = $helper->calculate($amount);
             }
-        } else {
         }
-        if ($currency == 'JPY') {
-            echo $this->customRound($result, 'whole') . "\n";
+        if ($fraction_mode == 'whole') {
+            return $this->customRound($result, 'whole');
         } else {
-            echo $this->customRoundAndFormatNumber($result, 'fraction') . "\n";
+            return $this->customRoundAndFormatNumber($result, 'fraction');
         }
     }
 
@@ -101,8 +141,11 @@ trait ProcessCommission
      * @param string $mode
      * @return float
      */
-    public function customRound(float $number, string $mode = 'fraction'): float
-    {
+    public
+    function customRound(
+        float $number,
+        string $mode = 'fraction'
+    ): float {
         //For Special Cases make the whole number round
         if ($mode == "whole") {
             return ceil($number);
@@ -131,8 +174,11 @@ trait ProcessCommission
      * @param string $mode
      * @return string
      */
-    public function customRoundAndFormatNumber(float $number, string $mode = 'fraction'): string
-    {
+    public
+    function customRoundAndFormatNumber(
+        float $number,
+        string $mode = 'fraction'
+    ): string {
         return number_format($this->customRound($number, $mode), 2);
     }
 
@@ -140,15 +186,18 @@ trait ProcessCommission
      * The custom logic to calculate fractional part.
      *
      * @param float $whole_part
-     * @param float $fractional_part
+     * @param string $fractional_part
      * @return float
      */
-    public function calculateFractionDigits(float $whole_part, float $fractional_part): float
-    {
-        //So that minimum 3 elements are available for calculation
-        $min_required_elements = 3;
-        $defElements = array_fill(0, $min_required_elements, null);
-        list($first_digit, $second_digit, $third_digit) = array_replace($defElements, str_split($fractional_part));
+    public
+    function calculateFractionDigits(
+        float $whole_part,
+        string $fractional_part
+    ): float {
+        $fraction_data = str_split($fractional_part);
+        $first_digit = $fraction_data[0] ?? 0;
+        $second_digit = $fraction_data[1] ?? 0;
+        $third_digit = $fraction_data[2] ?? 0;
         $carry = 0;
         if (isset($third_digit) && ! empty($third_digit)) {
             $carry++;
