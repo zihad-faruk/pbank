@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Helpers\CsvHelper;
+use App\Http\Controllers\ProcessCommissionController;
 use App\Traits\CalculateCommissionTrait;
 use Tests\TestCase;
 

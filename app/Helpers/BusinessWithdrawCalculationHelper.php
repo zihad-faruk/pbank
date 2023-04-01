@@ -4,7 +4,7 @@ namespace App\Helpers;
 
 use App\Interfaces\Commission;
 
-class WithdrawCalculationHelper implements Commission
+class BusinessWithdrawCalculationHelper implements Commission
 {
     public function calculate(string $amount): float
     {
