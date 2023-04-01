@@ -10,8 +10,8 @@ trait CalculateCommissionTrait
 {
     use CustomRoundTrait, CurrencyTrait;
 
-    protected $withdraw_record_array = [];
-    protected $discount_record_array = [];
+    protected $withdraw_records = [];
+    protected $discount_records = [];
     protected $currency_conversion_rates = [];
 
     public function setupConversionRates(): void
@@ -20,6 +20,7 @@ trait CalculateCommissionTrait
         $this->currency_conversion_rates = $conversion_rate_array;
     }
 
+    //Setup conversion rates for testing
     public function setupTestConversionRates(): void
     {
         $conversion_rate_array = [
@@ -41,7 +42,7 @@ trait CalculateCommissionTrait
         if (empty($date) || $user_id == '' || empty($user_type) || empty($operation_type) || empty($amount) || empty($currency)) {
             return "necessary fields missing";
         }
-        echo $code_for_user_interaction = $user_id . '_' . intval(date("Wo", strtotime($date)));
+        $code_for_user_interaction = $user_id . '_' . intval(date("Wo", strtotime($date)));
 
         $currency_info = config('commission.currency')[$currency] ?? [];
         if (empty($currency_info)) {
@@ -79,10 +80,14 @@ trait CalculateCommissionTrait
             );
         }
 
+        /***
+         * For JPY , no decimals are used , so fraction_mode = whole
+         * For others, upto 2 decimal places , so fraction_mode = fraction
+         ***/
         if ($fraction_mode == 'whole') {
             return $this->customRound($result, 'whole');
         } else {
-            return $this->customRoundAndFormatNumber($result, 'fraction');
+            return $this->customRoundAndFormatNumber($result);
         }
     }
 
@@ -93,10 +98,11 @@ trait CalculateCommissionTrait
         string $currency
     ): string {
         $result = 0.00;
-        if (isset($this->withdraw_record_array[$code_for_user_interaction])) {
-            $this->withdraw_record_array[$code_for_user_interaction]++;
+        //To check and keep count of withdraw operation of the same user within the same week
+        if (isset($this->withdraw_records[$code_for_user_interaction])) {
+            $this->withdraw_records[$code_for_user_interaction]++;
         } else {
-            $this->withdraw_record_array[$code_for_user_interaction] = 1;
+            $this->withdraw_records[$code_for_user_interaction] = 1;
         }
 
         if ($user_type == 'business') {
@@ -131,10 +137,15 @@ trait CalculateCommissionTrait
         $discount_amount = config(
             'commission.discount_amount_for_withdraw'
         );
-        if (isset($this->discount_record_array[$code_for_user_interaction])) {
-            $discount_amount = $this->discount_record_array[$code_for_user_interaction];
+        /***
+         * If this user already used discount the same week or not , is yes , use the remaining
+         * discount
+         ***/
+        if (isset($this->discount_records[$code_for_user_interaction])) {
+            $discount_amount = $this->discount_records[$code_for_user_interaction];
         }
-        if ($this->withdraw_record_array[$code_for_user_interaction] <= 3) {
+        // If the user has less than 3 operations in the same week
+        if ($this->withdraw_records[$code_for_user_interaction] <= 3) {
             $converted_discount = ($discount_amount * $conversion_rate);
             $temp_amount = $amount;
             $amount = $amount - $converted_discount;
@@ -144,7 +155,8 @@ trait CalculateCommissionTrait
                 $remaining_discount = $converted_discount - $temp_amount;
             }
 
-            $this->discount_record_array[$code_for_user_interaction] =
+            //Update discount records
+            $this->discount_records[$code_for_user_interaction] =
                 ($remaining_discount / $conversion_rate);
         }
         return $amount;

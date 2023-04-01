@@ -43,24 +43,17 @@ class CalculateCommission extends Command
     {
         $file = $this->argument('file');
         $public = $this->option('public');
-        /*try {
+        try {
             if ($public) {
                 $file_url = public_path($file);
             } else {
                 $file_url = $file;
             }
-            $this->processCommission($file_url);
+            $commission = new ProcessCommissionController();
+            $commission->processCommission($file_url);
         } catch (\Exception $e) {
-            echo "Error Occurred";
-        }*/
-        if ($public) {
-            $file_url = public_path($file);
-        } else {
-            $file_url = $file;
+            echo "Error Occurred\n";
         }
-        $commission = new ProcessCommissionController();
-        $commission->processCommission($file_url);
-        //$this->processCommission($file_url);
         return 0;
     }
 }

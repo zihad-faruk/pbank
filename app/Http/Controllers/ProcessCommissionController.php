@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\CsvHelper;
-use App\Traits\CustomRoundTrait;
-use App\Traits\CurrencyTrait;
 use App\Traits\CalculateCommissionTrait;
 
 
 class ProcessCommissionController extends Controller
 {
-    use CustomRoundTrait, CurrencyTrait, CalculateCommissionTrait;
+    use CalculateCommissionTrait;
 
     public function processCommission(string $file_path)
     {
