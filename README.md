@@ -26,6 +26,7 @@ The system is based on ```LARAVEL 8.0``` . So ```php 7.4 or higher``` is require
 ## How to install
 Please clone this git repository using below command
 ```
+git clone https://github.com/zihad-faruk/pbank.git
 ```
 
 After that run 
