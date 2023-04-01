@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use App\Helpers\CsvHelper;
+use App\Traits\CalculateCommissionTrait;
 use Tests\TestCase;
-use App\Traits\ProcessCommission;
 
 class CommissionTest extends TestCase
 {
-    use ProcessCommission;
+    use CalculateCommissionTrait;
 
     public function test_console_command_for_calculation(): void
     {

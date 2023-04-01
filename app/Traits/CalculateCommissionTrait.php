@@ -6,33 +6,22 @@ use App\Helpers\CsvHelper;
 use App\Helpers\DepositCalculationHelper;
 use App\Helpers\WithdrawCalculationHelper;
 use App\Helpers\PrivateWithdrawCalculationHelper;
-use Dotenv\Loader\Loader;
+use App\Traits\CurrencyTrait;
 use Illuminate\Support\Facades\Log;
 
 
-trait ProcessCommission
+trait CalculateCommissionTrait
 {
+    use CustomRoundTrait, CurrencyTrait;
+
     protected $withdraw_record_array = [];
     protected $discount_record_array = [];
-    protected $base_currency = 'EUR';
     protected $currency_conversion_rates = [];
 
     public function setupConversionRates()
     {
         $conversion_rate_array = $this->fetchConversionRates();
         $this->currency_conversion_rates = $conversion_rate_array;
-    }
-
-    public function fetchConversionRates()
-    {
-        $api_url = config('commission.currency_exchange_rates_api');
-        $response = file_get_contents($api_url);
-        Log::info("CURRENCY EXCHANGE API RESPONSE:" . $response);
-        if ( ! empty($response)) {
-            $response = json_decode($response, true);
-            return $response['rates'] ?? [];
-        }
-        return [];
     }
 
     public function setupTestConversionRates()
@@ -45,36 +34,17 @@ trait ProcessCommission
         $this->currency_conversion_rates = $conversion_rate_array;
     }
 
-    public
-    function processCommission(
-        string $file_path
-    ) {
-        if ( ! file_exists($file_path)) {
-            echo "File does not exist";
-        } else {
-            $path_info_extension = pathinfo($file_path, PATHINFO_EXTENSION);
-            if ($path_info_extension == 'csv') {
-                //First get each to data array and then process each row
-                $csv_helper = new CsvHelper();
-                $datas = $csv_helper->fileDataToArray($file_path);
-                foreach ($datas as $data) {
-                    echo $this->processEachRow($data) . "\n";
-                }
-            } else {
-                echo "Not Supported file type";
-            }
-        }
-    }
-
     private function processEachRow($row)
     {
-        $date = $row[0];
+        list($date, $user_id, $user_type, $operation_type, $amount, $currency) = $row;
+        $code_for_user_interaction = $user_id . '_' . intval(date("Wo", strtotime($date)));
+        /*$date = $row[0];
         $user_id = $row[1] ?? '';
         $code_for_user_interaction = $user_id . '_' . intval(date("Wo", strtotime($date)));
         $user_type = $row[2] ?? '';
         $operation_type = $row[3] ?? '';
         $amount = $row[4] ?? 0;
-        $currency = $row[5] ?? 0;
+        $currency = $row[5] ?? 0;*/
         $result = 0.00;
         $currency_info = config('commission.currency')[$currency] ?? [];
         if (empty($currency_info)) {
@@ -127,6 +97,7 @@ trait ProcessCommission
                 $result = $helper->calculate($amount);
             }
         }
+
         if ($fraction_mode == 'whole') {
             return $this->customRound($result, 'whole');
         } else {
@@ -134,92 +105,5 @@ trait ProcessCommission
         }
     }
 
-    /**
-     * Round the number according to custom rule.
-     *
-     * @param float $number
-     * @param string $mode
-     * @return float
-     */
-    public
-    function customRound(
-        float $number,
-        string $mode = 'fraction'
-    ): float {
-        //For Special Cases make the whole number round
-        if ($mode == "whole") {
-            return ceil($number);
-        }
-        //If number=0, return the rounded number
-        if (empty($number)) {
-            return $number;
-        }
-        $decimal_array = explode('.', $number);
-        $whole_part = $decimal_array[0] ?? 0;
-        $fractional_part = $decimal_array[1] ?? 0;
 
-
-        if (isset($fractional_part) && ! empty($fractional_part)) {
-            $result = $this->calculateFractionDigits($whole_part, $fractional_part);
-        } else {
-            $result = $whole_part;
-        }
-        return $result;
-    }
-
-    /**
-     * Round the number according to custom rule and format it to 2 decimal point.
-     *
-     * @param float $number
-     * @param string $mode
-     * @return string
-     */
-    public
-    function customRoundAndFormatNumber(
-        float $number,
-        string $mode = 'fraction'
-    ): string {
-        return number_format($this->customRound($number, $mode), 2);
-    }
-
-    /**
-     * The custom logic to calculate fractional part.
-     *
-     * @param float $whole_part
-     * @param string $fractional_part
-     * @return float
-     */
-    public
-    function calculateFractionDigits(
-        float $whole_part,
-        string $fractional_part
-    ): float {
-        $fraction_data = str_split($fractional_part);
-        $first_digit = $fraction_data[0] ?? 0;
-        $second_digit = $fraction_data[1] ?? 0;
-        $third_digit = $fraction_data[2] ?? 0;
-        $carry = 0;
-        if (isset($third_digit) && ! empty($third_digit)) {
-            $carry++;
-        }
-        if (isset($second_digit) && ! empty($second_digit)) {
-            if ($carry != 0) {
-                $second_digit++;
-                if ($second_digit > 9) {
-                    $second_digit = 0;
-                }
-            }
-            $carry++;
-        }
-        if (isset($first_digit) && ! empty($first_digit)) {
-            if ($carry != 0) {
-                $first_digit++;
-            }
-            if ($first_digit > 9) {
-                $first_digit = 0;
-                $whole_part++;
-            }
-        }
-        return (float)$whole_part . '.' . $first_digit . $second_digit;
-    }
 }

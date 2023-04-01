@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\ProcessCommissionController;
 use Illuminate\Console\Command;
-use App\Traits\ProcessCommission;
 
 class CalculateCommission extends Command
 {
-    use ProcessCommission;
 
     /**
      * The name and signature of the console command.
@@ -42,7 +41,7 @@ class CalculateCommission extends Command
      */
     public function handle(): int
     {
-        $file   = $this->argument('file');
+        $file = $this->argument('file');
         $public = $this->option('public');
         /*try {
             if ($public) {
@@ -59,7 +58,9 @@ class CalculateCommission extends Command
         } else {
             $file_url = $file;
         }
-        $this->processCommission($file_url);
+        $commission = new ProcessCommissionController();
+        $commission->processCommission($file_url);
+        //$this->processCommission($file_url);
         return 0;
     }
 }
