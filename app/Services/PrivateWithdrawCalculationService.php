@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Services;
 
-use App\Interfaces\Commission;
+use App\Interfaces\CommissionInterface;
 
-class PrivateWithdrawCalculationHelper implements Commission
+class PrivateWithdrawCalculationService implements CommissionInterface
 {
     public function calculate(string $amount): float
     {

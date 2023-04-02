@@ -2,9 +2,9 @@
 
 namespace App\Traits;
 
-use App\Helpers\DepositCalculationHelper;
-use App\Helpers\BusinessWithdrawCalculationHelper;
-use App\Helpers\PrivateWithdrawCalculationHelper;
+use App\Services\DepositCalculationService;
+use App\Services\BusinessWithdrawCalculationService;
+use App\Services\PrivateWithdrawCalculationService;
 
 trait CalculateCommissionTrait
 {
@@ -39,8 +39,8 @@ trait CalculateCommissionTrait
         $operation_type = $row[3] ?? '';
         $amount = $row[4] ?? 0;
         $currency = $row[5] ?? 0;
-        if (empty($date) || $user_id == '' || empty($user_type) || empty($operation_type) || empty($amount) || empty($currency)) {
-            return "necessary fields missing";
+        if (empty($date) || $user_id == '' || empty($user_type) || empty($operation_type) || empty($amount) || empty($currency) || !is_numeric($amount)) {
+            return "necessary fields missing or incorrectly formatted data";
         }
         $code_for_user_interaction = $user_id . '_' . intval(date("Wo", strtotime($date)));
 
@@ -69,7 +69,7 @@ trait CalculateCommissionTrait
     ): string {
         $result = 0.00;
         if ($operation_type == 'deposit') {
-            $deposit_helper = new DepositCalculationHelper();
+            $deposit_helper = new DepositCalculationService();
             $result = $deposit_helper->calculate($amount);
         } elseif ($operation_type == 'withdraw') {
             $result = $this->calculateWithdrawCommissionAmount(
@@ -106,7 +106,7 @@ trait CalculateCommissionTrait
         }
 
         if ($user_type == 'business') {
-            $helper = new BusinessWithdrawCalculationHelper();
+            $helper = new BusinessWithdrawCalculationService();
             $result = $helper->calculate($amount);
         } elseif ($user_type == 'private') {
             $amount = $this->calculatePrivateWithdrawCommissionAmount(
@@ -114,7 +114,7 @@ trait CalculateCommissionTrait
                 $amount,
                 $currency
             );
-            $helper = new PrivateWithdrawCalculationHelper();
+            $helper = new PrivateWithdrawCalculationService();
             $result = $helper->calculate($amount);
         }
 

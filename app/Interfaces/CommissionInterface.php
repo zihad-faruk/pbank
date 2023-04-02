@@ -2,7 +2,7 @@
 
 namespace App\Interfaces;
 
-interface Commission
+interface CommissionInterface
 {
     public function calculate(string $amount): float;
 }

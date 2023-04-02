@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Helpers\CsvHelper;
+use App\Services\CsvService;
 use App\Http\Controllers\ProcessCommissionController;
 use App\Traits\CalculateCommissionTrait;
 use Tests\TestCase;
@@ -21,7 +21,7 @@ class CommissionTest extends TestCase
     {
         $test_data_file_url = public_path("Test/test_data.csv");
         $output_data_file_url = public_path("Test/test_output_data.csv");
-        $csv_helper = new CsvHelper();
+        $csv_helper = new CsvService();
         $test_datas = $csv_helper->fileDataToArray($test_data_file_url);
         $output_datas = $csv_helper->fileDataToArray($output_data_file_url);
         $data_counter = 0;

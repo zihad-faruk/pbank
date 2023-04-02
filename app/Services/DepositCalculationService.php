@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Services;
 
-use App\Interfaces\Commission;
+use App\Interfaces\CommissionInterface;
 
 use function PHPUnit\Framework\returnArgument;
 
-class DepositCalculationHelper implements Commission
+class DepositCalculationService implements CommissionInterface
 {
     public function calculate(string $amount): float
     {

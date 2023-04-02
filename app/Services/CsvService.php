@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Services;
 
 use App\Interfaces\CommissionFileProcessorInterface;
 
-class CsvHelper implements CommissionFileProcessorInterface
+class CsvService implements CommissionFileProcessorInterface
 {
     public function fileDataToArray(string $file_path): array
     {
