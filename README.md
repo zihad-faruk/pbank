@@ -38,6 +38,12 @@ Please clone this git repository using below command
 git clone https://github.com/zihad-faruk/pbank.git
 ```
 
+Then navigate to project directory (in default case ``pbank``)
+
+```
+cd pbank
+```
+
 After that run
 
 ```
